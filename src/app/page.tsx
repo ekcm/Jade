@@ -2,12 +2,19 @@
 
 import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload'
+import {
+  type LanguageDirection,
+  LanguageToggle,
+} from '@/components/LanguageToggle'
 import { PDFViewer } from '@/components/PDFViewer'
+import { TranslationArea } from '@/components/TranslationArea'
 import type { SSRFile } from '@/types/file'
 import { isFile } from '@/types/file'
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<SSRFile | null>(null)
+  const [languageDirection, setLanguageDirection] =
+    useState<LanguageDirection>('en-to-zh')
 
   const handleFileSelect = (file: SSRFile) => {
     if (typeof window !== 'undefined') {
@@ -58,36 +65,22 @@ export default function Home() {
             </h2>
 
             {/* Translation Display Area */}
-            <div className="flex-1 mb-6">
-              <div className="h-64 lg:h-full bg-white border border-slate-200 rounded-lg p-4">
-                {selectedFile && typeof window !== 'undefined' ? (
-                  <div className="h-full flex flex-col">
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-slate-700">
-                        Ready to translate: {selectedFile.name}
-                      </p>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-slate-500 text-center">
-                        Translation controls and results will appear here
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-slate-500 text-center">
-                      Upload a PDF to start translation
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <TranslationArea
+              fileName={selectedFile?.name}
+              originalText=""
+              translatedText=""
+              isTranslating={false}
+            />
 
-            {/* Settings Bar Placeholder */}
+            {/* Settings Bar */}
             <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <p className="text-slate-500 text-sm text-center">
-                Translation settings will be here
-              </p>
+              <div className="flex items-center justify-center">
+                <LanguageToggle
+                  direction={languageDirection}
+                  onDirectionChange={setLanguageDirection}
+                  disabled={!selectedFile}
+                />
+              </div>
             </div>
           </div>
         </div>
