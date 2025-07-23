@@ -3,6 +3,8 @@
  */
 
 import Together from 'together-ai'
+import type { SSRFile } from '@/types/file'
+import { isFile } from '@/types/file'
 import { TOGETHER_AI_API_KEY } from './env'
 
 // Initialize TogetherAI client
@@ -45,7 +47,7 @@ export type TranslationDirection = 'en-to-zh' | 'zh-to-en'
 
 // Translation request interface
 export interface TranslationRequest {
-  file: File
+  file: SSRFile
   model: VisionModel
   direction: TranslationDirection
   customPrompt?: string
@@ -83,10 +85,20 @@ export interface MultiPageTranslationResponse {
 }
 
 /**
- * Convert File to base64 string for API consumption
+ * Convert file to base64 string for API
  */
-export async function fileToBase64(file: File): Promise<string> {
+export async function fileToBase64(file: SSRFile): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('File operations not supported in server environment'))
+      return
+    }
+
+    if (!isFile(file)) {
+      reject(new Error('Invalid file object'))
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result as string

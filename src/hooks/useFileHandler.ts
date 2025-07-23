@@ -1,9 +1,14 @@
 import { useCallback, useState } from 'react'
 import { validateFile } from '@/lib/validations'
-import type { FileAttemptResult, FileHandlerCallbacks } from '@/types/file'
+import type {
+  FileAttemptResult,
+  FileHandlerCallbacks,
+  SSRFile,
+} from '@/types/file'
+import { isFile } from '@/types/file'
 
 interface FileHandlerState {
-  selectedFile: File | null
+  selectedFile: SSRFile | null
   error: string | null
   isDragOver: boolean
 }
@@ -23,7 +28,9 @@ export function useFileHandler({
   }, [])
 
   const handleFileValidation = useCallback(
-    (file: File) => {
+    (file: SSRFile) => {
+      if (typeof window === 'undefined' || !isFile(file)) return
+
       const validation = validateFile(file)
 
       if (validation.success) {
@@ -45,7 +52,11 @@ export function useFileHandler({
   )
 
   const handleFileAttempt = useCallback(
-    (file: File): FileAttemptResult => {
+    (file: SSRFile): FileAttemptResult => {
+      if (typeof window === 'undefined') {
+        return { hasExistingFile: false as const }
+      }
+
       if (state.selectedFile) {
         // Return info for parent to handle toast
         return {
@@ -83,9 +94,13 @@ export function useFileHandler({
       e.preventDefault()
       setDragOver(false)
 
+      if (typeof window === 'undefined') {
+        return { hasExistingFile: false as const }
+      }
+
       const files = e.dataTransfer.files
       if (files.length > 0) {
-        const file = files[0]
+        const file = files[0] as SSRFile
         return handleFileAttempt(file)
       }
       return { hasExistingFile: false as const }
@@ -95,9 +110,13 @@ export function useFileHandler({
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): FileAttemptResult => {
+      if (typeof window === 'undefined') {
+        return { hasExistingFile: false as const }
+      }
+
       const files = e.target.files
       if (files && files.length > 0) {
-        const file = files[0]
+        const file = files[0] as SSRFile
         const result = handleFileAttempt(file)
         // Clear the input so the same file can be selected again
         e.target.value = ''

@@ -20,10 +20,15 @@ export const isClientSide =
 // Safe File type that works on both client and server
 export type SafeFile = typeof isClientSide extends true ? File : FileData
 
+// Runtime type guard to check if we have a real File object
+export function isFile(file: SSRFile): file is File {
+  return typeof window !== 'undefined' && file instanceof File
+}
+
 // File validation result types
 export interface FileValidationSuccess {
   success: true
-  data: { file: File }
+  data: { file: SSRFile }
 }
 
 export interface FileValidationError {
@@ -35,7 +40,7 @@ export type FileValidationResult = FileValidationSuccess | FileValidationError
 
 // File upload state interface
 export interface FileUploadState {
-  file: File | null
+  file: SSRFile | null
   error: string | null
   isUploading: boolean
   uploadProgress: number
@@ -44,8 +49,8 @@ export interface FileUploadState {
 // File handler return types for discriminated unions
 export interface FileAttemptWithExisting {
   hasExistingFile: true
-  currentFile: File
-  newFile: File
+  currentFile: SSRFile
+  newFile: SSRFile
   replaceFile: () => void
 }
 
@@ -59,7 +64,7 @@ export type FileAttemptResult =
 
 // Component prop types
 export interface FileHandlerCallbacks {
-  onFileSelect?: (file: File) => void
+  onFileSelect?: (file: SSRFile) => void
   onFileClear?: () => void
 }
 
@@ -72,7 +77,7 @@ export interface FileDropZoneProps {
 }
 
 export interface FileDisplayProps {
-  file: File
+  file: SSRFile
   onClear: () => void
 }
 
@@ -81,6 +86,6 @@ export interface FileUploadErrorProps {
 }
 
 export interface FileUploadProps {
-  onFileSelect?: (file: File) => void
+  onFileSelect?: (file: SSRFile) => void
   onFileClear?: () => void
 }

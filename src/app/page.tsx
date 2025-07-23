@@ -3,18 +3,24 @@
 import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload'
 import { PDFViewer } from '@/components/PDFViewer'
+import type { SSRFile } from '@/types/file'
+import { isFile } from '@/types/file'
 
 export default function Home() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFile, setSelectedFile] = useState<SSRFile | null>(null)
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file)
-    console.log('File selected:', file.name)
+  const handleFileSelect = (file: SSRFile) => {
+    if (typeof window !== 'undefined') {
+      setSelectedFile(file)
+      console.log('File selected:', file.name)
+    }
   }
 
   const handleFileClear = () => {
     setSelectedFile(null)
-    console.log('File cleared')
+    if (typeof window !== 'undefined') {
+      console.log('File cleared')
+    }
   }
 
   return (
@@ -28,7 +34,9 @@ export default function Home() {
               PDF Viewer
             </h2>
             <div className="h-64 lg:h-full">
-              {selectedFile ? (
+              {selectedFile &&
+              typeof window !== 'undefined' &&
+              isFile(selectedFile) ? (
                 <PDFViewer file={selectedFile} />
               ) : (
                 <div className="h-full bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-4">
@@ -52,7 +60,7 @@ export default function Home() {
             {/* Translation Display Area */}
             <div className="flex-1 mb-6">
               <div className="h-64 lg:h-full bg-white border border-slate-200 rounded-lg p-4">
-                {selectedFile ? (
+                {selectedFile && typeof window !== 'undefined' ? (
                   <div className="h-full flex flex-col">
                     <div className="mb-4">
                       <p className="text-sm font-medium text-slate-700">

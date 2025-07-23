@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useFileHandler } from '@/hooks/useFileHandler'
 import { UI_TEXT } from '@/lib/constants'
-import type { FileUploadProps } from '@/types/file'
+import type { FileUploadProps, SSRFile } from '@/types/file'
 import { FileDisplay, FileDropZone, FileUploadError } from './file-upload'
 
 export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
@@ -22,8 +22,8 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
   const { toast } = useToast()
 
   const showReplaceFileToast = (
-    currentFile: File,
-    _newFile: File,
+    currentFile: SSRFile,
+    _newFile: SSRFile,
     replaceFile: () => void,
   ) => {
     const { dismiss } = toast({
