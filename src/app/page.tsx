@@ -16,6 +16,7 @@ export default function Home() {
             <div className="h-64 lg:h-full bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-4">
               <FileUpload
                 onFileSelect={(file) => console.log('File selected:', file)}
+                onFileClear={() => console.log('File cleared')}
               />
             </div>
           </div>

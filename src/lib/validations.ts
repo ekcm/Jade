@@ -32,7 +32,7 @@ export function validateFile(file: File): {
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const firstError = error.errors[0]
+      const firstError = error.issues[0]
       return {
         success: false,
         error: firstError.message,
@@ -52,4 +52,12 @@ export function formatFileSize(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`
+}
+
+// Helper function to estimate PDF page count based on file size
+export function estimatePageCount(fileSizeBytes: number): string {
+  // Very rough estimation: average PDF page ~100KB
+  // This is just for display purposes, actual pages will be determined during processing
+  const estimatedPages = Math.max(1, Math.round(fileSizeBytes / (100 * 1024)))
+  return `~${estimatedPages} page${estimatedPages !== 1 ? 's' : ''}`
 }

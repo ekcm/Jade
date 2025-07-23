@@ -1,20 +1,27 @@
 'use client'
 
-import { AlertCircle, FileText, Upload } from 'lucide-react'
+import { AlertCircle, FileText, Upload, X } from 'lucide-react'
 import { useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { formatFileSize, validateFile } from '@/lib/validations'
+import { useToast } from '@/hooks/use-toast'
+import {
+  estimatePageCount,
+  formatFileSize,
+  validateFile,
+} from '@/lib/validations'
 
 interface FileUploadProps {
   onFileSelect?: (file: File) => void
+  onFileClear?: () => void
 }
 
-export function FileUpload({ onFileSelect }: FileUploadProps) {
+export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -33,7 +40,7 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
     const files = e.dataTransfer.files
     if (files.length > 0) {
       const file = files[0]
-      handleFileValidation(file)
+      handleFileAttempt(file)
     }
   }
 
@@ -41,10 +48,57 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
     const files = e.target.files
     if (files && files.length > 0) {
       const file = files[0]
-      handleFileValidation(file)
+      handleFileAttempt(file)
     }
     // Clear the input so the same file can be selected again
     e.target.value = ''
+  }
+
+  const handleFileAttempt = (file: File) => {
+    if (selectedFile) {
+      // File already exists, show toast
+      showReplaceFileToast(file)
+    } else {
+      // No file exists, proceed with validation
+      handleFileValidation(file)
+    }
+  }
+
+  const showReplaceFileToast = (newFile: File) => {
+    const { dismiss } = toast({
+      title: 'File already uploaded',
+      description: (
+        <div className="space-y-3">
+          <p className="text-sm">
+            "{selectedFile?.name}" is currently selected. What would you like to
+            do?
+          </p>
+          <div className="flex flex-col space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                dismiss()
+              }}
+              className="w-full"
+            >
+              Keep current file
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                handleFileValidation(newFile)
+                dismiss()
+              }}
+              className="w-full bg-jade-600 hover:bg-jade-700"
+            >
+              Replace with new file
+            </Button>
+          </div>
+        </div>
+      ),
+    })
   }
 
   const handleFileValidation = (file: File) => {
@@ -58,6 +112,12 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
       setSelectedFile(null)
       setError(validation.error || 'Invalid file')
     }
+  }
+
+  const handleClearFile = () => {
+    setSelectedFile(null)
+    setError(null)
+    onFileClear?.()
   }
 
   return (
@@ -127,14 +187,41 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
 
       {/* Selected File Info */}
       {selectedFile && (
-        <div className="flex items-center space-x-3 p-4 bg-jade-50 border border-jade-200 rounded-lg">
-          <FileText className="w-5 h-5 text-jade-600" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-jade-900">
-              {selectedFile.name}
-            </p>
-            <p className="text-xs text-jade-600">
-              {formatFileSize(selectedFile.size)}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-3 p-4 bg-jade-50 border border-jade-200 rounded-lg">
+            <FileText className="w-5 h-5 text-jade-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-jade-900">
+                {selectedFile.name}
+              </p>
+              <div className="flex items-center space-x-2 mt-1">
+                <p className="text-xs text-jade-600">
+                  {formatFileSize(selectedFile.size)}
+                </p>
+                <span className="text-jade-400">•</span>
+                <p className="text-xs text-jade-600">
+                  {selectedFile.type || 'PDF'}
+                </p>
+                <span className="text-jade-400">•</span>
+                <p className="text-xs text-jade-600">
+                  {estimatePageCount(selectedFile.size)}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFile}
+              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              aria-label="Clear file"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="text-center">
+            <p className="text-xs text-slate-500">
+              ✓ File uploaded successfully and ready for processing
             </p>
           </div>
         </div>
