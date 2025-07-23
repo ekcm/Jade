@@ -1,25 +1,30 @@
 'use client'
 
-import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload'
-import {
-  type LanguageDirection,
-  LanguageToggle,
-} from '@/components/LanguageToggle'
-import { ModelSelect, type TranslationModel } from '@/components/ModelSelect'
+import { LanguageToggle } from '@/components/LanguageToggle'
+import { ModelSelect } from '@/components/ModelSelect'
 import { PDFViewer } from '@/components/PDFViewer'
 import { TranslationArea } from '@/components/TranslationArea'
 import { TranslationButton } from '@/components/TranslationButton'
+import { useAppStore } from '@/lib/store'
 import type { SSRFile } from '@/types/file'
 import { isFile } from '@/types/file'
 
 export default function Home() {
-  const [selectedFile, setSelectedFile] = useState<SSRFile | null>(null)
-  const [languageDirection, setLanguageDirection] =
-    useState<LanguageDirection>('en-to-zh')
-  const [selectedModel, setSelectedModel] =
-    useState<TranslationModel>('qwen2.5-72b')
-  const [isTranslating, setIsTranslating] = useState(false)
+  // Get state and actions from Zustand store
+  const {
+    selectedFile,
+    languageDirection,
+    selectedModel,
+    isTranslating,
+    originalText,
+    translatedText,
+    setSelectedFile,
+    setLanguageDirection,
+    setSelectedModel,
+    setIsTranslating,
+    clearPDF,
+  } = useAppStore()
 
   const handleFileSelect = (file: SSRFile) => {
     if (typeof window !== 'undefined') {
@@ -29,7 +34,7 @@ export default function Home() {
   }
 
   const handleFileClear = () => {
-    setSelectedFile(null)
+    clearPDF()
     if (typeof window !== 'undefined') {
       console.log('File cleared')
     }
@@ -37,6 +42,31 @@ export default function Home() {
 
   const handleStartTranslation = () => {
     if (!selectedFile) return
+
+    // Log the entire global state for testing
+    const currentState = useAppStore.getState()
+    console.log('=== GLOBAL STATE BEFORE TRANSLATION ===')
+    console.log('PDF State:', {
+      selectedFile: currentState.selectedFile?.name,
+      pageCount: currentState.pageCount,
+      isLoading: currentState.isLoading,
+    })
+    console.log('Translation State:', {
+      languageDirection: currentState.languageDirection,
+      selectedModel: currentState.selectedModel,
+      originalText: currentState.originalText,
+      translatedText: currentState.translatedText,
+      isTranslating: currentState.isTranslating,
+      currentPage: currentState.currentPage,
+      totalPages: currentState.totalPages,
+      progress: currentState.progress,
+    })
+    console.log('UI State:', {
+      errors: currentState.errors,
+      notifications: currentState.notifications,
+    })
+    console.log('========================================')
+
     setIsTranslating(true)
     // TODO: Implement actual translation logic
     console.log(
@@ -92,8 +122,8 @@ export default function Home() {
             {/* Translation Display Area */}
             <TranslationArea
               fileName={selectedFile?.name}
-              originalText=""
-              translatedText=""
+              originalText={originalText}
+              translatedText={translatedText}
               isTranslating={isTranslating}
             />
 
