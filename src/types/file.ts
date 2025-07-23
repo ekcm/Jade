@@ -10,6 +10,16 @@ export interface FileData {
   lastModified?: number
 }
 
+// SSR-safe File type - use File when available (client), FileData when not (server)
+export type SSRFile = File | FileData
+
+// Type guard to check if File is available (client-side only)
+export const isClientSide =
+  typeof window !== 'undefined' && typeof File !== 'undefined'
+
+// Safe File type that works on both client and server
+export type SafeFile = typeof isClientSide extends true ? File : FileData
+
 // File validation result types
 export interface FileValidationSuccess {
   success: true

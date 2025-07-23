@@ -132,7 +132,9 @@ export function validateModelSupport(
   model: VisionModel,
   format: string,
 ): boolean {
-  return MODEL_CONFIG[model].supportedFormats.includes(format as any)
+  return MODEL_CONFIG[model].supportedFormats.includes(
+    format as 'pdf' | 'image',
+  )
 }
 
 /**
