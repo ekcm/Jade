@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: 'Jade',
   description: 'A Next.js application built with TypeScript and shadcn/ui',
   icons: {
-    icon: '/Jade_Gem.png',
+    icon: '/JadeImage.png',
   },
 }
 
