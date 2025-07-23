@@ -1,2 +1,16 @@
-node_modules
-.next
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Environment variables (contains sensitive data)
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development
+*.log

@@ -1,8 +1,22 @@
 'use client'
 
+import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload'
+import { PDFViewer } from '@/components/PDFViewer'
 
 export default function Home() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file)
+    console.log('File selected:', file.name)
+  }
+
+  const handleFileClear = () => {
+    setSelectedFile(null)
+    console.log('File cleared')
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Main Content - Two Column Layout */}
@@ -13,11 +27,17 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-slate-700 mb-4">
               PDF Viewer
             </h2>
-            <div className="h-64 lg:h-full bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-4">
-              <FileUpload
-                onFileSelect={(file) => console.log('File selected:', file)}
-                onFileClear={() => console.log('File cleared')}
-              />
+            <div className="h-64 lg:h-full">
+              {selectedFile ? (
+                <PDFViewer file={selectedFile} />
+              ) : (
+                <div className="h-full bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-4">
+                  <FileUpload
+                    onFileSelect={handleFileSelect}
+                    onFileClear={handleFileClear}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -32,16 +52,33 @@ export default function Home() {
             {/* Translation Display Area */}
             <div className="flex-1 mb-6">
               <div className="h-64 lg:h-full bg-white border border-slate-200 rounded-lg p-4">
-                <p className="text-slate-500 text-center">
-                  Translation results will appear here
-                </p>
+                {selectedFile ? (
+                  <div className="h-full flex flex-col">
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-slate-700">
+                        Ready to translate: {selectedFile.name}
+                      </p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-slate-500 text-center">
+                        Translation controls and results will appear here
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-slate-500 text-center">
+                      Upload a PDF to start translation
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Settings Bar Placeholder */}
             <div className="bg-white border border-slate-200 rounded-lg p-4">
               <p className="text-slate-500 text-sm text-center">
-                Settings controls will be here
+                Translation settings will be here
               </p>
             </div>
           </div>
