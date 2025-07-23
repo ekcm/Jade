@@ -1,9 +1,11 @@
 'use client'
 
-import { FileText, Upload } from 'lucide-react'
+import { AlertCircle, FileText, Upload } from 'lucide-react'
 import { useState } from 'react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { formatFileSize, validateFile } from '@/lib/validations'
 
 interface FileUploadProps {
   onFileSelect?: (file: File) => void
@@ -12,6 +14,7 @@ interface FileUploadProps {
 export function FileUpload({ onFileSelect }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -30,8 +33,7 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
     const files = e.dataTransfer.files
     if (files.length > 0) {
       const file = files[0]
-      setSelectedFile(file)
-      onFileSelect?.(file)
+      handleFileValidation(file)
     }
   }
 
@@ -39,8 +41,22 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
     const files = e.target.files
     if (files && files.length > 0) {
       const file = files[0]
+      handleFileValidation(file)
+    }
+    // Clear the input so the same file can be selected again
+    e.target.value = ''
+  }
+
+  const handleFileValidation = (file: File) => {
+    const validation = validateFile(file)
+
+    if (validation.success) {
       setSelectedFile(file)
+      setError(null)
       onFileSelect?.(file)
+    } else {
+      setSelectedFile(null)
+      setError(validation.error || 'Invalid file')
     }
   }
 
@@ -101,6 +117,14 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Selected File Info */}
       {selectedFile && (
         <div className="flex items-center space-x-3 p-4 bg-jade-50 border border-jade-200 rounded-lg">
@@ -110,7 +134,7 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
               {selectedFile.name}
             </p>
             <p className="text-xs text-jade-600">
-              {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+              {formatFileSize(selectedFile.size)}
             </p>
           </div>
         </div>
