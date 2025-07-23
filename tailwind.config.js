@@ -50,6 +50,13 @@ module.exports = {
           4: 'hsl(var(--chart-4))',
           5: 'hsl(var(--chart-5))',
         },
+        jade: {
+          50: '#f0fdf4', // Very light jade
+          100: '#dcfce7', // Light jade
+          500: '#22c55e', // Medium jade (primary)
+          600: '#16a34a', // Dark jade
+          700: '#15803d', // Darker jade
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
