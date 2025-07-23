@@ -1,16 +1,13 @@
 'use client'
 
 import { AlertCircle, FileText, Upload, X } from 'lucide-react'
-import { useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import {
-  estimatePageCount,
-  formatFileSize,
-  validateFile,
-} from '@/lib/validations'
+import { useFileHandler } from '@/hooks/useFileHandler'
+import { FILE_UPLOAD_CONFIG, UI_TEXT } from '@/lib/constants'
+import { estimatePageCount, formatFileSize } from '@/lib/validations'
 
 interface FileUploadProps {
   onFileSelect?: (file: File) => void
@@ -18,59 +15,30 @@ interface FileUploadProps {
 }
 
 export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
-  const [isDragOver, setIsDragOver] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    selectedFile,
+    error,
+    isDragOver,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop: hookHandleDrop,
+    handleFileChange: hookHandleFileChange,
+    handleClearFile,
+  } = useFileHandler({ onFileSelect, onFileClear })
+
   const { toast } = useToast()
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      const file = files[0]
-      handleFileAttempt(file)
-    }
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      const file = files[0]
-      handleFileAttempt(file)
-    }
-    // Clear the input so the same file can be selected again
-    e.target.value = ''
-  }
-
-  const handleFileAttempt = (file: File) => {
-    if (selectedFile) {
-      // File already exists, show toast
-      showReplaceFileToast(file)
-    } else {
-      // No file exists, proceed with validation
-      handleFileValidation(file)
-    }
-  }
-
-  const showReplaceFileToast = (newFile: File) => {
+  const showReplaceFileToast = (
+    currentFile: File,
+    _newFile: File,
+    replaceFile: () => void,
+  ) => {
     const { dismiss } = toast({
-      title: 'File already uploaded',
+      title: UI_TEXT.TOAST.FILE_ALREADY_UPLOADED_TITLE,
       description: (
         <div className="space-y-3">
           <p className="text-sm">
-            "{selectedFile?.name}" is currently selected. What would you like to
+            "{currentFile.name}" is currently selected. What would you like to
             do?
           </p>
           <div className="flex flex-col space-y-2">
@@ -82,18 +50,18 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
               }}
               className="w-full"
             >
-              Keep current file
+              {UI_TEXT.TOAST.KEEP_CURRENT_FILE}
             </Button>
             <Button
               variant="default"
               size="sm"
               onClick={() => {
-                handleFileValidation(newFile)
+                replaceFile()
                 dismiss()
               }}
               className="w-full bg-jade-600 hover:bg-jade-700"
             >
-              Replace with new file
+              {UI_TEXT.TOAST.REPLACE_WITH_NEW_FILE}
             </Button>
           </div>
         </div>
@@ -101,23 +69,26 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
     })
   }
 
-  const handleFileValidation = (file: File) => {
-    const validation = validateFile(file)
-
-    if (validation.success) {
-      setSelectedFile(file)
-      setError(null)
-      onFileSelect?.(file)
-    } else {
-      setSelectedFile(null)
-      setError(validation.error || 'Invalid file')
+  const handleDrop = (e: React.DragEvent) => {
+    const result = hookHandleDrop(e)
+    if (result.hasExistingFile) {
+      showReplaceFileToast(
+        result.currentFile,
+        result.newFile,
+        result.replaceFile,
+      )
     }
   }
 
-  const handleClearFile = () => {
-    setSelectedFile(null)
-    setError(null)
-    onFileClear?.()
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const result = hookHandleFileChange(e)
+    if (result.hasExistingFile) {
+      showReplaceFileToast(
+        result.currentFile,
+        result.newFile,
+        result.replaceFile,
+      )
+    }
   }
 
   return (
@@ -137,7 +108,7 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
       >
         <Input
           type="file"
-          accept=".pdf"
+          accept={FILE_UPLOAD_CONFIG.ACCEPTED_TYPES.join(',')}
           onChange={handleFileChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
@@ -159,10 +130,12 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
 
           <div className="px-2">
             <p className="text-base sm:text-lg font-medium text-slate-700">
-              {isDragOver ? 'Drop your PDF here' : 'Upload PDF file'}
+              {isDragOver
+                ? UI_TEXT.UPLOAD.DRAG_DROP_ACTIVE
+                : UI_TEXT.UPLOAD.DRAG_DROP_PROMPT}
             </p>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Drag & drop or click to browse (Max 10MB)
+              {UI_TEXT.UPLOAD.BROWSE_INSTRUCTION}
             </p>
           </div>
 
@@ -172,7 +145,7 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
             size="sm"
             className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400"
           >
-            Choose File
+            {UI_TEXT.UPLOAD.CHOOSE_FILE_BUTTON}
           </Button>
         </div>
       </div>
@@ -213,7 +186,7 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
               size="sm"
               onClick={handleClearFile}
               className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              aria-label="Clear file"
+              aria-label={UI_TEXT.UPLOAD.CLEAR_FILE_ARIA}
             >
               <X className="w-4 h-4" />
             </Button>
@@ -221,7 +194,7 @@ export function FileUpload({ onFileSelect, onFileClear }: FileUploadProps) {
 
           <div className="text-center">
             <p className="text-xs text-slate-500">
-              ✓ File uploaded successfully and ready for processing
+              {UI_TEXT.UPLOAD.SUCCESS_MESSAGE}
             </p>
           </div>
         </div>

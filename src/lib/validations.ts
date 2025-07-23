@@ -1,17 +1,28 @@
 import { z } from 'zod'
+import {
+  FILE_SIZE_UNITS,
+  FILE_UPLOAD_CONFIG,
+  VALIDATION_MESSAGES,
+} from './constants'
 
 // File validation schema
 export const fileSchema = z.object({
   file: z
     .instanceof(File)
-    .refine((file) => file.type === 'application/pdf', {
-      message: 'File must be a PDF',
-    })
-    .refine((file) => file.size <= 10 * 1024 * 1024, {
-      message: 'File size must be less than 10MB',
+    .refine(
+      (file) =>
+        FILE_UPLOAD_CONFIG.ACCEPTED_TYPES.includes(
+          file.type as (typeof FILE_UPLOAD_CONFIG.ACCEPTED_TYPES)[number],
+        ),
+      {
+        message: VALIDATION_MESSAGES.FILE_TYPE_ERROR,
+      },
+    )
+    .refine((file) => file.size <= FILE_UPLOAD_CONFIG.MAX_FILE_SIZE, {
+      message: VALIDATION_MESSAGES.FILE_SIZE_ERROR,
     })
     .refine((file) => file.size > 0, {
-      message: 'File cannot be empty',
+      message: VALIDATION_MESSAGES.FILE_EMPTY_ERROR,
     }),
 })
 
@@ -40,7 +51,7 @@ export function validateFile(file: File): {
     }
     return {
       success: false,
-      error: 'Invalid file',
+      error: VALIDATION_MESSAGES.INVALID_FILE_ERROR,
     }
   }
 }
@@ -49,15 +60,18 @@ export function validateFile(file: File): {
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'
   const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
+  const sizes = FILE_SIZE_UNITS
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`
 }
 
 // Helper function to estimate PDF page count based on file size
 export function estimatePageCount(fileSizeBytes: number): string {
-  // Very rough estimation: average PDF page ~100KB
+  // Very rough estimation based on average PDF page size
   // This is just for display purposes, actual pages will be determined during processing
-  const estimatedPages = Math.max(1, Math.round(fileSizeBytes / (100 * 1024)))
+  const estimatedPages = Math.max(
+    1,
+    Math.round(fileSizeBytes / FILE_UPLOAD_CONFIG.PAGE_SIZE_ESTIMATE),
+  )
   return `~${estimatedPages} page${estimatedPages !== 1 ? 's' : ''}`
 }
