@@ -8,6 +8,7 @@ import {
 } from '@/components/LanguageToggle'
 import { PDFViewer } from '@/components/PDFViewer'
 import { TranslationArea } from '@/components/TranslationArea'
+import { TranslationButton } from '@/components/TranslationButton'
 import type { SSRFile } from '@/types/file'
 import { isFile } from '@/types/file'
 
@@ -15,6 +16,7 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<SSRFile | null>(null)
   const [languageDirection, setLanguageDirection] =
     useState<LanguageDirection>('en-to-zh')
+  const [isTranslating, setIsTranslating] = useState(false)
 
   const handleFileSelect = (file: SSRFile) => {
     if (typeof window !== 'undefined') {
@@ -28,6 +30,24 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       console.log('File cleared')
     }
+  }
+
+  const handleStartTranslation = () => {
+    if (!selectedFile) return
+    setIsTranslating(true)
+    // TODO: Implement actual translation logic
+    console.log(
+      'Starting translation for:',
+      selectedFile.name,
+      'Direction:',
+      languageDirection,
+    )
+
+    // Simulate translation for now
+    setTimeout(() => {
+      setIsTranslating(false)
+      console.log('Translation completed')
+    }, 3000)
   }
 
   return (
@@ -69,16 +89,21 @@ export default function Home() {
               fileName={selectedFile?.name}
               originalText=""
               translatedText=""
-              isTranslating={false}
+              isTranslating={isTranslating}
             />
 
             {/* Settings Bar */}
             <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-between space-x-4">
                 <LanguageToggle
                   direction={languageDirection}
                   onDirectionChange={setLanguageDirection}
+                  disabled={!selectedFile || isTranslating}
+                />
+                <TranslationButton
+                  isTranslating={isTranslating}
                   disabled={!selectedFile}
+                  onClick={handleStartTranslation}
                 />
               </div>
             </div>
