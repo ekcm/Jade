@@ -1,3 +1,7 @@
+'use client'
+
+import { FileUpload } from '@/components/FileUpload'
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50">
@@ -9,8 +13,10 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-slate-700 mb-4">
               PDF Viewer
             </h2>
-            <div className="h-64 lg:h-full bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center">
-              <p className="text-slate-500">Upload a PDF to view it here</p>
+            <div className="h-64 lg:h-full bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-4">
+              <FileUpload
+                onFileSelect={(file) => console.log('File selected:', file)}
+              />
             </div>
           </div>
         </div>
