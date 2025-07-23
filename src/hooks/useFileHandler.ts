@@ -1,15 +1,11 @@
 import { useCallback, useState } from 'react'
 import { validateFile } from '@/lib/validations'
+import type { FileAttemptResult, FileHandlerCallbacks } from '@/types/file'
 
 interface FileHandlerState {
   selectedFile: File | null
   error: string | null
   isDragOver: boolean
-}
-
-interface FileHandlerCallbacks {
-  onFileSelect?: (file: File) => void
-  onFileClear?: () => void
 }
 
 export function useFileHandler({
@@ -49,7 +45,7 @@ export function useFileHandler({
   )
 
   const handleFileAttempt = useCallback(
-    (file: File) => {
+    (file: File): FileAttemptResult => {
       if (state.selectedFile) {
         // Return info for parent to handle toast
         return {
@@ -83,7 +79,7 @@ export function useFileHandler({
   )
 
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    (e: React.DragEvent): FileAttemptResult => {
       e.preventDefault()
       setDragOver(false)
 
@@ -98,7 +94,7 @@ export function useFileHandler({
   )
 
   const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>): FileAttemptResult => {
       const files = e.target.files
       if (files && files.length > 0) {
         const file = files[0]

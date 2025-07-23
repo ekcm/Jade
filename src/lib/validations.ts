@@ -30,11 +30,9 @@ export const fileSchema = z.object({
 export type FileValidation = z.infer<typeof fileSchema>
 
 // Validation function that returns detailed error information
-export function validateFile(file: File): {
-  success: boolean
-  error?: string
-  data?: { file: File }
-} {
+export function validateFile(
+  file: File,
+): import('@/types/file').FileValidationResult {
   try {
     const result = fileSchema.parse({ file })
     return {
