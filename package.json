@@ -1,0 +1,63 @@
+{
+  "name": "jade",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint . --write",
+    "format": "biome format . --write",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "check:fix": "biome check . --write",
+    "type-check": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "biome check --write"
+    ],
+    "*.{json,md}": [
+      "biome format --write"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ekcm/Jade.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ekcm/Jade/issues"
+  },
+  "homepage": "https://github.com/ekcm/Jade#readme",
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
+    "next": "^15.4.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.1.2",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.31.0",
+    "eslint-config-next": "^15.4.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
+  }
+}
