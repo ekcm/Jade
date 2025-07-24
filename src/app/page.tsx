@@ -19,6 +19,9 @@ export default function Home() {
     isTranslating,
     originalText,
     translatedText,
+    currentPage,
+    totalPages,
+    progress,
     setSelectedFile,
     setLanguageDirection,
     setSelectedModel,
@@ -26,6 +29,8 @@ export default function Home() {
     setOriginalText,
     setTranslatedText,
     setPageCount,
+    setCurrentPage,
+    setTotalPages,
     setProgress,
     addError,
     clearPDF,
@@ -108,13 +113,72 @@ export default function Home() {
       console.log(`[Stage 1] ✅ PDF converted to ${pdfResult.pageCount} images`)
       setPageCount(pdfResult.pageCount)
 
-      // Stage 2: Server-side text extraction using vision model
-      console.log('[Stage 2] Calling vision model for text extraction...')
+      // Stage 2: Server-side text extraction using vision model (batch processing)
+      console.log('[Stage 2] Starting batch text extraction...')
 
-      const extractionResult = await extractTextMutation.mutateAsync({
-        images: pdfResult.images,
-        fileName: selectedFile.name,
-      })
+      const BATCH_SIZE = 3 // Process 3 pages at a time to avoid payload limits
+      const allPages: Array<{ pageNumber: number; text: string }> = []
+      const totalBatches = Math.ceil(pdfResult.images.length / BATCH_SIZE)
+
+      for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+        const startIndex = batchIndex * BATCH_SIZE
+        const endIndex = Math.min(
+          startIndex + BATCH_SIZE,
+          pdfResult.images.length,
+        )
+        const batchImages = pdfResult.images.slice(startIndex, endIndex)
+
+        console.log(
+          `[Stage 2] Processing batch ${batchIndex + 1}/${totalBatches} (pages ${startIndex + 1}-${endIndex})...`,
+        )
+
+        try {
+          const batchResult = await extractTextMutation.mutateAsync({
+            images: batchImages,
+            fileName: `${selectedFile.name} (batch ${batchIndex + 1})`,
+          } as any)
+
+          if (batchResult.success) {
+            allPages.push(...batchResult.pages)
+
+            // Update progress: 50% for PDF conversion + (batch progress * 25%)
+            const batchProgress =
+              50 + Math.round(((batchIndex + 1) / totalBatches) * 25)
+            setProgress(batchProgress)
+            setCurrentPage(endIndex)
+
+            console.log(
+              `[Stage 2] Batch ${batchIndex + 1} completed: ${batchResult.pages.length} pages`,
+            )
+          } else {
+            throw new Error(
+              batchResult.error || `Batch ${batchIndex + 1} extraction failed`,
+            )
+          }
+        } catch (error) {
+          console.error(`[Stage 2] Batch ${batchIndex + 1} failed:`, error)
+          // Add error pages for failed batch
+          for (let i = startIndex; i < endIndex; i++) {
+            allPages.push({
+              pageNumber: i + 1,
+              text: `[Error extracting text from page ${i + 1}]`,
+            })
+          }
+        }
+      }
+
+      // Combine all extracted text
+      const combinedText = allPages
+        .sort((a, b) => a.pageNumber - b.pageNumber)
+        .map((page) => `--- Page ${page.pageNumber} ---\n${page.text}`)
+        .join('\n\n')
+
+      const extractionResult = {
+        success: true,
+        extractedText: combinedText,
+        pageCount: allPages.length,
+        pages: allPages,
+      }
 
       if (extractionResult.success) {
         console.log(`[Stage 2] ✅ Text extraction completed!`)
@@ -175,7 +239,7 @@ export default function Home() {
           throw new Error(translationResult.error || 'Translation failed')
         }
       } else {
-        throw new Error(extractionResult.error || 'Text extraction failed')
+        throw new Error('Text extraction failed')
       }
     } catch (error) {
       console.error('[PDF Translation Pipeline] Failed:', error)
@@ -232,6 +296,9 @@ export default function Home() {
           originalText={originalText}
           translatedText={translatedText}
           isTranslating={isTranslating}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          progress={progress}
           languageDirection={languageDirection}
           selectedModel={selectedModel}
           selectedFile={selectedFile}

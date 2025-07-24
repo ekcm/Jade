@@ -8,6 +8,7 @@ import { z } from 'zod'
 const ExtractTextRequestSchema = z.object({
   images: z.array(z.string()), // Array of base64 image data URLs
   fileName: z.string(),
+  startPageNumber: z.number().optional().default(1),
 })
 
 // Response schema
@@ -28,7 +29,8 @@ export async function POST(request: NextRequest) {
   try {
     // Parse and validate request
     const body = await request.json()
-    const { images, fileName } = ExtractTextRequestSchema.parse(body)
+    const { images, fileName, startPageNumber } =
+      ExtractTextRequestSchema.parse(body)
 
     console.log(`[Vision API] Starting text extraction for: ${fileName}`)
     console.log(`[Vision API] Processing ${images.length} page images`)
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     const extractedPages = []
 
     for (let i = 0; i < images.length; i++) {
-      const pageNumber = i + 1
+      const pageNumber = startPageNumber + i
       console.log(`[Vision API] Processing page ${pageNumber}/${images.length}`)
 
       try {
