@@ -6,6 +6,8 @@ import { ModelSelect } from '@/components/ModelSelect'
 import { PDFViewer } from '@/components/PDFViewer'
 import { TranslationArea } from '@/components/TranslationArea'
 import { TranslationButton } from '@/components/TranslationButton'
+import { convertPDFToImages } from '@/lib/pdfProcessor'
+import { useExtractText } from '@/lib/queries'
 import { useAppStore } from '@/lib/store'
 import type { SSRFile } from '@/types/file'
 import { isFile } from '@/types/file'
@@ -23,8 +25,15 @@ export default function Home() {
     setLanguageDirection,
     setSelectedModel,
     setIsTranslating,
+    setOriginalText,
+    setPageCount,
+    setProgress,
+    addError,
     clearPDF,
   } = useAppStore()
+
+  // Text extraction mutation
+  const extractTextMutation = useExtractText()
 
   const handleFileSelect = (file: SSRFile) => {
     if (typeof window !== 'undefined') {
@@ -40,8 +49,8 @@ export default function Home() {
     }
   }
 
-  const handleStartTranslation = () => {
-    if (!selectedFile) return
+  const handleStartTranslation = async () => {
+    if (!selectedFile || !isFile(selectedFile)) return
 
     // Log the entire global state for testing
     const currentState = useAppStore.getState()
@@ -68,9 +77,8 @@ export default function Home() {
     console.log('========================================')
 
     setIsTranslating(true)
-    // TODO: Implement actual translation logic
     console.log(
-      'Starting translation for:',
+      'Starting PDF text extraction for:',
       selectedFile.name,
       'Direction:',
       languageDirection,
@@ -78,11 +86,68 @@ export default function Home() {
       selectedModel,
     )
 
-    // Simulate translation for now
-    setTimeout(() => {
+    try {
+      // Stage 1: Client-side PDF to images conversion
+      console.log('[Stage 1] Converting PDF to images on client-side...')
+
+      const pdfResult = await convertPDFToImages(
+        selectedFile,
+        (current, total) => {
+          const progressPercent = Math.round((current / total) * 50) // First 50% for PDF processing
+          setProgress(progressPercent)
+          console.log(
+            `[Stage 1] PDF Processing: ${current}/${total} pages (${progressPercent}%)`,
+          )
+        },
+      )
+
+      if (!pdfResult.success) {
+        throw new Error(pdfResult.error || 'PDF processing failed')
+      }
+
+      console.log(`[Stage 1] ✅ PDF converted to ${pdfResult.pageCount} images`)
+      setPageCount(pdfResult.pageCount)
+
+      // Stage 2: Server-side text extraction using vision model
+      console.log('[Stage 2] Calling vision model for text extraction...')
+
+      const extractionResult = await extractTextMutation.mutateAsync({
+        images: pdfResult.images,
+        fileName: selectedFile.name,
+      })
+
+      if (extractionResult.success) {
+        console.log(`[Stage 2] ✅ Text extraction completed!`)
+        console.log(
+          `[Stage 2] 📄 Pages processed: ${extractionResult.pageCount}`,
+        )
+        console.log(
+          `[Stage 2] 📝 Total text length: ${extractionResult.extractedText.length} characters`,
+        )
+
+        // Update store with extracted text and page count
+        setOriginalText(extractionResult.extractedText)
+        setPageCount(extractionResult.pageCount)
+        setProgress(100) // Complete
+
+        // Log each page's text length for debugging
+        extractionResult.pages.forEach((page) => {
+          console.log(
+            `[Stage 2] Page ${page.pageNumber}: ${page.text.length} characters`,
+          )
+        })
+      } else {
+        throw new Error(extractionResult.error || 'Text extraction failed')
+      }
+    } catch (error) {
+      console.error('[PDF Text Extraction] Failed:', error)
+      addError(
+        error instanceof Error ? error.message : 'Text extraction failed',
+      )
+      setProgress(0) // Reset progress on error
+    } finally {
       setIsTranslating(false)
-      console.log('Translation completed')
-    }, 3000)
+    }
   }
 
   return (
