@@ -3,6 +3,7 @@
 import { FileUpload } from '@/components/FileUpload'
 import { PDFViewer } from '@/components/PDFViewer'
 import { TranslationContainer } from '@/components/TranslationContainer'
+import { Button } from '@/components/ui/button'
 import { convertPDFToImages } from '@/lib/pdfProcessor'
 import { useExtractText, useTranslateText } from '@/lib/queries'
 import { useAppStore } from '@/lib/store'
@@ -194,9 +195,20 @@ export default function Home() {
         {/* Left Container - PDF Viewer (60% on desktop, full width on mobile) */}
         <div className="w-full lg:w-3/5 lg:border-r border-slate-200 bg-white">
           <div className="h-full p-4 lg:p-6">
-            <h2 className="text-lg font-semibold text-slate-700 mb-4">
-              PDF Viewer
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-700">
+                PDF Viewer
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleFileClear}
+                disabled={isTranslating}
+                className="text-slate-600 hover:text-slate-900"
+              >
+                Clear
+              </Button>
+            </div>
             <div className="h-64 lg:h-full">
               {selectedFile &&
               typeof window !== 'undefined' &&
