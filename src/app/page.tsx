@@ -1,12 +1,8 @@
 'use client'
 
 import { FileUpload } from '@/components/FileUpload'
-import { LanguageToggle } from '@/components/LanguageToggle'
-import { ModelSelect } from '@/components/ModelSelect'
 import { PDFViewer } from '@/components/PDFViewer'
-import { TextExtractionArea } from '@/components/TextExtractionArea'
-import { TranslationArea } from '@/components/TranslationArea'
-import { TranslationButton } from '@/components/TranslationButton'
+import { TranslationContainer } from '@/components/TranslationContainer'
 import { convertPDFToImages } from '@/lib/pdfProcessor'
 import { useExtractText, useTranslateText } from '@/lib/queries'
 import { useAppStore } from '@/lib/store'
@@ -218,51 +214,19 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Container - Translation Area (40% on desktop, full width on mobile) */}
-        <div className="w-full lg:w-2/5 bg-slate-50">
-          <div className="h-full p-4 lg:p-6 flex flex-col">
-            <h2 className="text-lg font-semibold text-slate-700 mb-4">
-              Translation
-            </h2>
-
-            {/* Text Extraction and Translation Display Areas */}
-            <div className="flex-1 space-y-4">
-              <TextExtractionArea
-                fileName={selectedFile?.name}
-                originalText={originalText}
-                isExtracting={isTranslating}
-              />
-              <TranslationArea
-                translatedText={translatedText}
-                isTranslating={isTranslating}
-                hasOriginalText={!!originalText}
-              />
-            </div>
-
-            {/* Settings Bar */}
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center justify-center space-x-6">
-                <LanguageToggle
-                  direction={languageDirection}
-                  onDirectionChange={setLanguageDirection}
-                  disabled={!selectedFile || isTranslating}
-                />
-                <div className="w-40">
-                  <ModelSelect
-                    selectedModel={selectedModel}
-                    onModelChange={setSelectedModel}
-                    disabled={!selectedFile || isTranslating}
-                  />
-                </div>
-                <TranslationButton
-                  isTranslating={isTranslating}
-                  disabled={!selectedFile}
-                  onClick={handleStartTranslation}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Right Container - Translation Container */}
+        <TranslationContainer
+          fileName={selectedFile?.name}
+          originalText={originalText}
+          translatedText={translatedText}
+          isTranslating={isTranslating}
+          languageDirection={languageDirection}
+          selectedModel={selectedModel}
+          selectedFile={selectedFile}
+          onLanguageDirectionChange={setLanguageDirection}
+          onModelChange={setSelectedModel}
+          onStartTranslation={handleStartTranslation}
+        />
       </main>
     </div>
   )
