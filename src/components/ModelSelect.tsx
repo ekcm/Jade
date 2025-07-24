@@ -22,7 +22,7 @@ interface ModelSelectProps {
 const modelOptions = [
   {
     value: 'qwen2.5-72b' as const,
-    label: 'Qwen2.5 72B',
+    label: 'Qwen2.5 7B Turbo',
   },
   {
     value: 'kimi-k2-instruct' as const,

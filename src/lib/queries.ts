@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { z } from 'zod'
 
-// API Request/Response Types for new client-side processing approach
+// API Request/Response Types for text extraction
 const ExtractTextRequestSchema = z.object({
   images: z.array(z.string()), // Array of base64 image data URLs from client-side processing
   fileName: z.string(),
@@ -20,8 +20,27 @@ const ExtractTextResponseSchema = z.object({
   error: z.string().optional(),
 })
 
+// API Request/Response Types for translation
+const TranslateRequestSchema = z.object({
+  text: z.string(),
+  sourceLanguage: z.enum(['en', 'zh']),
+  targetLanguage: z.enum(['en', 'zh']),
+  model: z.enum(['qwen2.5-72b', 'kimi-k2', 'deepseek-v3']),
+})
+
+const TranslateResponseSchema = z.object({
+  success: z.boolean(),
+  translatedText: z.string(),
+  sourceLanguage: z.string(),
+  targetLanguage: z.string(),
+  model: z.string(),
+  error: z.string().optional(),
+})
+
 export type ExtractTextRequest = z.infer<typeof ExtractTextRequestSchema>
 export type ExtractTextResponse = z.infer<typeof ExtractTextResponseSchema>
+export type TranslateRequest = z.infer<typeof TranslateRequestSchema>
+export type TranslateResponse = z.infer<typeof TranslateResponseSchema>
 
 // API Functions
 async function extractTextFromImages(
@@ -48,6 +67,31 @@ async function extractTextFromImages(
   return ExtractTextResponseSchema.parse(data)
 }
 
+// Translation API function
+async function translateText(
+  request: TranslateRequest,
+): Promise<TranslateResponse> {
+  console.log(
+    `[API Call] Translating text using ${request.model} (${request.sourceLanguage} → ${request.targetLanguage})`,
+  )
+
+  const response = await fetch('/api/translate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+  }
+
+  const data = await response.json()
+  return TranslateResponseSchema.parse(data)
+}
+
 // Query Hooks
 export function useExtractText() {
   return useMutation({
@@ -57,6 +101,18 @@ export function useExtractText() {
     },
     onError: (error) => {
       console.error('[Extract Text] Error:', error)
+    },
+  })
+}
+
+export function useTranslateText() {
+  return useMutation({
+    mutationFn: translateText,
+    onSuccess: (data) => {
+      console.log('[Translate Text] Success:', data)
+    },
+    onError: (error) => {
+      console.error('[Translate Text] Error:', error)
     },
   })
 }

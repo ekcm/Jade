@@ -8,7 +8,7 @@ import { TextExtractionArea } from '@/components/TextExtractionArea'
 import { TranslationArea } from '@/components/TranslationArea'
 import { TranslationButton } from '@/components/TranslationButton'
 import { convertPDFToImages } from '@/lib/pdfProcessor'
-import { useExtractText } from '@/lib/queries'
+import { useExtractText, useTranslateText } from '@/lib/queries'
 import { useAppStore } from '@/lib/store'
 import type { SSRFile } from '@/types/file'
 import { isFile } from '@/types/file'
@@ -27,14 +27,16 @@ export default function Home() {
     setSelectedModel,
     setIsTranslating,
     setOriginalText,
+    setTranslatedText,
     setPageCount,
     setProgress,
     addError,
     clearPDF,
   } = useAppStore()
 
-  // Text extraction mutation
+  // Text extraction and translation mutations
   const extractTextMutation = useExtractText()
+  const translateTextMutation = useTranslateText()
 
   const handleFileSelect = (file: SSRFile) => {
     if (typeof window !== 'undefined') {
@@ -129,7 +131,7 @@ export default function Home() {
         // Update store with extracted text and page count
         setOriginalText(extractionResult.extractedText)
         setPageCount(extractionResult.pageCount)
-        setProgress(100) // Complete
+        setProgress(75) // 75% complete after extraction
 
         // Log each page's text length for debugging
         extractionResult.pages.forEach((page) => {
@@ -137,13 +139,51 @@ export default function Home() {
             `[Stage 2] Page ${page.pageNumber}: ${page.text.length} characters`,
           )
         })
+
+        // Stage 3: Translation using selected model
+        console.log('[Stage 3] Starting translation...')
+
+        // Determine language direction
+        const sourceLanguage = languageDirection === 'en-to-zh' ? 'en' : 'zh'
+        const targetLanguage = languageDirection === 'en-to-zh' ? 'zh' : 'en'
+
+        // Map UI model names to API model names
+        const modelMapping = {
+          'qwen2.5-72b': 'qwen2.5-72b',
+          'kimi-k2-instruct': 'kimi-k2',
+          'deepseek-v3': 'deepseek-v3',
+        } as const
+
+        const apiModel = modelMapping[selectedModel]
+
+        const translationResult = await translateTextMutation.mutateAsync({
+          text: extractionResult.extractedText,
+          sourceLanguage,
+          targetLanguage,
+          model: apiModel,
+        })
+
+        if (translationResult.success) {
+          console.log(
+            `[Stage 3] ✅ Translation completed using ${selectedModel}!`,
+          )
+          console.log(
+            `[Stage 3] 📝 Translated text length: ${translationResult.translatedText.length} characters`,
+          )
+
+          // Update store with translated text
+          setTranslatedText(translationResult.translatedText)
+          setProgress(100) // Complete
+        } else {
+          throw new Error(translationResult.error || 'Translation failed')
+        }
       } else {
         throw new Error(extractionResult.error || 'Text extraction failed')
       }
     } catch (error) {
-      console.error('[PDF Text Extraction] Failed:', error)
+      console.error('[PDF Translation Pipeline] Failed:', error)
       addError(
-        error instanceof Error ? error.message : 'Text extraction failed',
+        error instanceof Error ? error.message : 'Translation pipeline failed',
       )
       setProgress(0) // Reset progress on error
     } finally {
