@@ -3,57 +3,57 @@
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
-interface TranslationAreaProps {
-  translatedText?: string
-  isTranslating?: boolean
-  hasOriginalText?: boolean
+interface TextExtractionAreaProps {
+  originalText?: string
+  isExtracting?: boolean
+  fileName?: string
 }
 
-export function TranslationArea({
-  translatedText,
-  isTranslating = false,
-  hasOriginalText = false,
-}: TranslationAreaProps) {
+export function TextExtractionArea({
+  originalText,
+  isExtracting = false,
+  fileName,
+}: TextExtractionAreaProps) {
   return (
     <Card className="p-4 bg-white border-slate-200">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-slate-700">Translation</h3>
-        {isTranslating && hasOriginalText && !translatedText && (
+        <h3 className="text-sm font-medium text-slate-700">Original Text</h3>
+        {isExtracting && !originalText && (
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-jade-500 rounded-full animate-pulse" />
-            <span className="text-sm text-jade-600">Translating...</span>
+            <span className="text-sm text-jade-600">Extracting...</span>
           </div>
         )}
       </div>
       <div className="min-h-[120px] max-h-[200px] overflow-y-auto">
-        {isTranslating && hasOriginalText && !translatedText ? (
-          // Show skeleton during translation phase (after text extraction is complete)
+        {isExtracting && !originalText ? (
+          // Show skeleton during PDF processing/text extraction
           <div className="h-[120px] flex flex-col justify-start space-y-2 overflow-hidden">
             <div className="space-y-2">
               <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-5/6" />
               <Skeleton className="h-3 w-4/5" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
               <Skeleton className="h-3 w-5/6" />
             </div>
             <div className="space-y-2">
-              <Skeleton className="h-3 w-3/4" />
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-2/3" />
-            </div>
-            <div className="space-y-2">
               <Skeleton className="h-3 w-4/5" />
-              <Skeleton className="h-3 w-3/5" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
           </div>
-        ) : translatedText ? (
+        ) : originalText ? (
           <p className="text-sm text-slate-900 whitespace-pre-wrap">
-            {translatedText}
+            {originalText}
           </p>
         ) : (
           <div className="flex items-center justify-center h-[120px]">
             <p className="text-slate-500 text-sm text-center">
-              {isTranslating && !hasOriginalText
-                ? 'Processing...'
-                : 'Translation will appear here'}
+              {fileName
+                ? `Ready to extract text from ${fileName}`
+                : 'Upload a PDF to extract text'}
             </p>
           </div>
         )}

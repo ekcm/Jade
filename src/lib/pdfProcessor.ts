@@ -1,9 +1,39 @@
 // Client-side PDF processing using browser PDF.js
 // This avoids all serverless dependency issues by processing in browser
 
+// PDF.js type definitions for client-side usage
+interface PDFJSLib {
+  getDocument: (params: { data: Uint8Array }) => {
+    promise: Promise<PDFDocument>
+  }
+  GlobalWorkerOptions: {
+    workerSrc: string
+  }
+}
+
+interface PDFDocument {
+  numPages: number
+  getPage: (pageNumber: number) => Promise<PDFPage>
+}
+
+interface PDFPage {
+  getViewport: (params: { scale: number }) => PDFViewport
+  render: (params: {
+    canvasContext: CanvasRenderingContext2D
+    viewport: PDFViewport
+  }) => {
+    promise: Promise<void>
+  }
+}
+
+interface PDFViewport {
+  width: number
+  height: number
+}
+
 declare global {
   interface Window {
-    pdfjsLib: any
+    pdfjsLib: PDFJSLib
   }
 }
 

@@ -4,6 +4,7 @@ import { FileUpload } from '@/components/FileUpload'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { ModelSelect } from '@/components/ModelSelect'
 import { PDFViewer } from '@/components/PDFViewer'
+import { TextExtractionArea } from '@/components/TextExtractionArea'
 import { TranslationArea } from '@/components/TranslationArea'
 import { TranslationButton } from '@/components/TranslationButton'
 import { convertPDFToImages } from '@/lib/pdfProcessor'
@@ -184,13 +185,19 @@ export default function Home() {
               Translation
             </h2>
 
-            {/* Translation Display Area */}
-            <TranslationArea
-              fileName={selectedFile?.name}
-              originalText={originalText}
-              translatedText={translatedText}
-              isTranslating={isTranslating}
-            />
+            {/* Text Extraction and Translation Display Areas */}
+            <div className="flex-1 space-y-4">
+              <TextExtractionArea
+                fileName={selectedFile?.name}
+                originalText={originalText}
+                isExtracting={isTranslating}
+              />
+              <TranslationArea
+                translatedText={translatedText}
+                isTranslating={isTranslating}
+                hasOriginalText={!!originalText}
+              />
+            </div>
 
             {/* Settings Bar */}
             <div className="bg-white border border-slate-200 rounded-lg p-4">
