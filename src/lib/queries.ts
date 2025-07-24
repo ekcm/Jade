@@ -5,6 +5,7 @@ import { z } from 'zod'
 const ExtractTextRequestSchema = z.object({
   images: z.array(z.string()), // Array of base64 image data URLs from client-side processing
   fileName: z.string(),
+  startPageNumber: z.number().optional().default(1),
 })
 
 const ExtractTextResponseSchema = z.object({

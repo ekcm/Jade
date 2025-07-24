@@ -19,9 +19,6 @@ export default function Home() {
     isTranslating,
     originalText,
     translatedText,
-    currentPage,
-    totalPages,
-    progress,
     setSelectedFile,
     setLanguageDirection,
     setSelectedModel,
@@ -29,8 +26,6 @@ export default function Home() {
     setOriginalText,
     setTranslatedText,
     setPageCount,
-    setCurrentPage,
-    setTotalPages,
     setProgress,
     addError,
     clearPDF,
@@ -136,7 +131,8 @@ export default function Home() {
           const batchResult = await extractTextMutation.mutateAsync({
             images: batchImages,
             fileName: `${selectedFile.name} (batch ${batchIndex + 1})`,
-          } as any)
+            startPageNumber: startIndex + 1,
+          })
 
           if (batchResult.success) {
             allPages.push(...batchResult.pages)
@@ -145,7 +141,6 @@ export default function Home() {
             const batchProgress =
               50 + Math.round(((batchIndex + 1) / totalBatches) * 25)
             setProgress(batchProgress)
-            setCurrentPage(endIndex)
 
             console.log(
               `[Stage 2] Batch ${batchIndex + 1} completed: ${batchResult.pages.length} pages`,
@@ -296,9 +291,6 @@ export default function Home() {
           originalText={originalText}
           translatedText={translatedText}
           isTranslating={isTranslating}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          progress={progress}
           languageDirection={languageDirection}
           selectedModel={selectedModel}
           selectedFile={selectedFile}
