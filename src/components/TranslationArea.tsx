@@ -15,7 +15,7 @@ export function TranslationArea({
   hasOriginalText = false,
 }: TranslationAreaProps) {
   return (
-    <Card className="p-4 bg-white border-slate-200">
+    <Card className="h-80 flex flex-col p-4 bg-white border-slate-200">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-medium text-slate-700">Translation</h3>
         {isTranslating && hasOriginalText && !translatedText && (
@@ -25,7 +25,7 @@ export function TranslationArea({
           </div>
         )}
       </div>
-      <div className="min-h-[120px] max-h-[200px] overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {isTranslating && hasOriginalText && !translatedText ? (
           // Show skeleton during translation phase (after text extraction is complete)
           <div className="h-[120px] flex flex-col justify-start space-y-2 overflow-hidden">
