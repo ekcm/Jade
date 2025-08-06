@@ -14,7 +14,7 @@ export const together = new Together({
 
 // Available vision models for PDF translation
 export const VISION_MODELS = {
-  QWEN_VL_72B: 'Qwen/Qwen2-VL-72B-Instruct',
+  QWEN_VL_72B: 'Qwen/Qwen2.5-VL-72B-Instruct',
 } as const
 
 export type VisionModel = (typeof VISION_MODELS)[keyof typeof VISION_MODELS]

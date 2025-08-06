@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 // Supported translation models (serverless-compatible)
 const TRANSLATION_MODELS = {
-  'qwen2.5-72b': 'Qwen/Qwen2.5-7B-Instruct-Turbo',
+  'qwen2.5-72b': 'Qwen/Qwen2.5-72B-Instruct',
   'kimi-k2': 'moonshotai/Kimi-K2-Instruct',
   'deepseek-v3': 'deepseek-ai/DeepSeek-V3',
 } as const
