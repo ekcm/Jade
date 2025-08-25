@@ -2,12 +2,16 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { LanguageDirection } from '@/components/LanguageToggle'
 import type { TranslationModel } from '@/components/ModelSelect'
-import type { SSRFile } from '@/types/file'
+import type { FileType, SSRFile } from '@/types/file'
+import { isFile } from '@/types/file'
+import { getFileType } from './validations'
 
-// PDF State Types
-interface PDFState {
+// Document State Types (formerly PDF State)
+interface DocumentState {
   selectedFile: SSRFile | null
-  pageCount: number
+  fileType: FileType
+  pageCount: number // For PDF: actual pages, For JSON: always 1
+  keyCount: number // For JSON: translatable keys, For PDF: always 0
   isLoading: boolean
 }
 
@@ -30,14 +34,19 @@ interface UIState {
 }
 
 // Combined Store State
-interface AppState extends PDFState, TranslationState, UIState {}
+interface AppState extends DocumentState, TranslationState, UIState {}
 
 // Actions Interface
 interface AppActions {
-  // PDF Actions
-  setSelectedFile: (file: SSRFile | null) => void
-  clearPDF: () => void
+  // Document Actions (formerly PDF Actions)
+  setSelectedFile: (file: SSRFile | null, fileType?: FileType) => void
+  clearDocument: () => void
   setPageCount: (count: number) => void
+  setKeyCount: (count: number) => void
+  setDocumentLoading: (loading: boolean) => void
+
+  // Legacy PDF Actions (for backward compatibility)
+  clearPDF: () => void
   setPDFLoading: (loading: boolean) => void
 
   // Translation Actions
@@ -67,9 +76,11 @@ interface AppActions {
 type AppStore = AppState & AppActions
 
 // Initial State
-const initialPDFState: PDFState = {
+const initialDocumentState: DocumentState = {
   selectedFile: null,
+  fileType: 'unknown',
   pageCount: 0,
+  keyCount: 0,
   isLoading: false,
 }
 
@@ -90,7 +101,7 @@ const initialUIState: UIState = {
 }
 
 const initialState: AppState = {
-  ...initialPDFState,
+  ...initialDocumentState,
   ...initialTranslationState,
   ...initialUIState,
 }
@@ -101,28 +112,75 @@ export const useAppStore = create<AppStore>()(
     (set, _get) => ({
       ...initialState,
 
-      // PDF Actions
-      setSelectedFile: (file) =>
+      // Document Actions (formerly PDF Actions)
+      setSelectedFile: (file, fileType) =>
         set(
-          (state) => ({
-            ...state,
-            selectedFile: file,
-            // Clear previous translation data when new file is selected
-            originalText: '',
-            translatedText: '',
-            currentPage: 0,
-            progress: 0,
-          }),
+          (state) => {
+            // Determine file type if not provided
+            const detectedFileType =
+              fileType || (file && isFile(file) ? getFileType(file) : 'unknown')
+
+            return {
+              ...state,
+              selectedFile: file,
+              fileType: detectedFileType,
+              // Reset counts when new file is selected
+              pageCount: 0,
+              keyCount: 0,
+              // Clear previous translation data when new file is selected
+              originalText: '',
+              translatedText: '',
+              currentPage: 0,
+              totalPages: 0,
+              progress: 0,
+            }
+          },
           false,
           'setSelectedFile',
         ),
 
+      clearDocument: () =>
+        set(
+          (state) => ({
+            ...state,
+            selectedFile: null,
+            fileType: 'unknown',
+            pageCount: 0,
+            keyCount: 0,
+            isLoading: false,
+            // Clear related translation data
+            originalText: '',
+            translatedText: '',
+            currentPage: 0,
+            totalPages: 0,
+            progress: 0,
+          }),
+          false,
+          'clearDocument',
+        ),
+
+      setPageCount: (count) =>
+        set((state) => ({ ...state, pageCount: count }), false, 'setPageCount'),
+
+      setKeyCount: (count) =>
+        set((state) => ({ ...state, keyCount: count }), false, 'setKeyCount'),
+
+      setDocumentLoading: (loading) =>
+        set(
+          (state) => ({ ...state, isLoading: loading }),
+          false,
+          'setDocumentLoading',
+        ),
+
+      // Legacy PDF Actions (for backward compatibility)
       clearPDF: () =>
         set(
           (state) => ({
             ...state,
             selectedFile: null,
+            fileType: 'unknown',
             pageCount: 0,
+            keyCount: 0,
             isLoading: false,
             // Clear related translation data
             originalText: '',
@@ -134,9 +192,6 @@ export const useAppStore = create<AppStore>()(
           false,
           'clearPDF',
         ),
-
-      setPageCount: (count) =>
-        set((state) => ({ ...state, pageCount: count }), false, 'setPageCount'),
 
       setPDFLoading: (loading) =>
         set(
@@ -270,6 +325,16 @@ export const useAppStore = create<AppStore>()(
 )
 
 // Selector Hooks for Better Performance
+export const useDocumentState = () =>
+  useAppStore((state) => ({
+    selectedFile: state.selectedFile,
+    fileType: state.fileType,
+    pageCount: state.pageCount,
+    keyCount: state.keyCount,
+    isLoading: state.isLoading,
+  }))
+
+// Legacy PDF State Hook (for backward compatibility)
 export const usePDFState = () =>
   useAppStore((state) => ({
     selectedFile: state.selectedFile,

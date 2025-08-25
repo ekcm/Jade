@@ -1,104 +1,195 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-// Minimal server-side API that only handles TogetherAI vision model calls
-// No PDF processing, canvas, or complex dependencies - all done client-side
+// Multi-format text extraction API
+// Handles both PDF (via vision model) and JSON (direct processing) extraction
+// All file processing is done client-side to avoid serverless dependencies
 
-// Request validation schema
-const ExtractTextRequestSchema = z.object({
+// Request validation schemas for different file types
+const PDFExtractRequestSchema = z.object({
+  type: z.literal('pdf'),
   images: z.array(z.string()), // Array of base64 image data URLs
   fileName: z.string(),
   startPageNumber: z.number().optional().default(1),
 })
 
-// Response schema
+const JSONExtractRequestSchema = z.object({
+  type: z.literal('json'),
+  content: z.string(), // JSON content as string
+  fileName: z.string(),
+})
+
+const ExtractTextRequestSchema = z.discriminatedUnion('type', [
+  PDFExtractRequestSchema,
+  JSONExtractRequestSchema,
+])
+
+// Response schema (same for both PDF and JSON)
 const ExtractTextResponseSchema = z.object({
   success: z.boolean(),
   extractedText: z.string(),
-  pageCount: z.number(),
+  pageCount: z.number(), // For PDF: actual pages, For JSON: chunk count
   pages: z.array(
     z.object({
-      pageNumber: z.number(),
+      pageNumber: z.number(), // For PDF: page number, For JSON: chunk index
       text: z.string(),
     }),
   ),
+  fileType: z.enum(['pdf', 'json']),
   error: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
+  let detectedFileType: 'pdf' | 'json' = 'pdf' // Default fallback
+
   try {
     // Parse and validate request
     const body = await request.json()
-    const { images, fileName, startPageNumber } =
-      ExtractTextRequestSchema.parse(body)
 
-    console.log(`[Vision API] Starting text extraction for: ${fileName}`)
-    console.log(`[Vision API] Processing ${images.length} page images`)
-
-    // Extract text from each page image using Qwen 2-VL-72B
-    const extractedPages = []
-
-    for (let i = 0; i < images.length; i++) {
-      const pageNumber = startPageNumber + i
-      console.log(`[Vision API] Processing page ${pageNumber}/${images.length}`)
-
-      try {
-        const extractedText = await extractTextFromImage(images[i])
-        extractedPages.push({
-          pageNumber,
-          text: extractedText,
-        })
-
-        console.log(
-          `[Vision API] Page ${pageNumber} processed successfully (${extractedText.length} characters)`,
-        )
-      } catch (error) {
-        console.error(
-          `[Vision API] Error processing page ${pageNumber}:`,
-          error,
-        )
-        extractedPages.push({
-          pageNumber,
-          text: `[Error extracting text from page ${pageNumber}]`,
-        })
-      }
+    // Try to detect file type from raw body before validation
+    if (body?.type === 'json') {
+      detectedFileType = 'json'
     }
 
-    // Combine all extracted text
-    const combinedText = extractedPages
-      .map((page) => `--- Page ${page.pageNumber} ---\n${page.text}`)
-      .join('\n\n')
+    const requestData = ExtractTextRequestSchema.parse(body)
+    detectedFileType = requestData.type // Update with validated type
 
     console.log(
-      `[Vision API] ✅ COMPLETED: Processed ${images.length} pages from ${fileName}`,
+      `[Extract API] Starting extraction for: ${requestData.fileName}`,
     )
-    console.log(
-      `[Vision API] Total extracted text length: ${combinedText.length} characters`,
-    )
+    console.log(`[Extract API] File type: ${requestData.type}`)
 
-    // Return successful response
-    const response = ExtractTextResponseSchema.parse({
-      success: true,
-      extractedText: combinedText,
-      pageCount: images.length,
-      pages: extractedPages,
-    })
+    // Route to appropriate processing based on file type
+    if (requestData.type === 'pdf') {
+      return await processPDFExtraction(requestData)
+    } else if (requestData.type === 'json') {
+      return await processJSONExtraction(requestData)
+    }
 
-    return NextResponse.json(response)
+    throw new Error('Unsupported file type')
   } catch (error) {
-    console.error('[Vision API] Error:', error)
+    console.error('[Extract API] Error:', error)
 
     const errorResponse = ExtractTextResponseSchema.parse({
       success: false,
       extractedText: '',
       pageCount: 0,
       pages: [],
+      fileType: detectedFileType, // Use detected file type instead of hardcoded 'pdf'
       error: error instanceof Error ? error.message : 'Unknown error',
     })
 
     return NextResponse.json(errorResponse, { status: 500 })
   }
 }
+
+// PDF processing using vision model (original logic)
+async function processPDFExtraction(
+  requestData: z.infer<typeof PDFExtractRequestSchema>,
+): Promise<NextResponse> {
+  const { images, fileName, startPageNumber } = requestData
+
+  console.log(`[PDF API] Processing ${images.length} page images`)
+
+  // Extract text from each page image using Qwen 2-VL-72B
+  const extractedPages = []
+
+  for (let i = 0; i < images.length; i++) {
+    const pageNumber = startPageNumber + i
+    console.log(`[PDF API] Processing page ${pageNumber}/${images.length}`)
+
+    try {
+      const extractedText = await extractTextFromImage(images[i])
+      extractedPages.push({
+        pageNumber,
+        text: extractedText,
+      })
+
+      console.log(
+        `[PDF API] Page ${pageNumber} processed successfully (${extractedText.length} characters)`,
+      )
+    } catch (error) {
+      console.error(`[PDF API] Error processing page ${pageNumber}:`, error)
+      extractedPages.push({
+        pageNumber,
+        text: `[Error extracting text from page ${pageNumber}]`,
+      })
+    }
+  }
+
+  // Combine all extracted text
+  const combinedText = extractedPages
+    .map((page) => `--- Page ${page.pageNumber} ---\n${page.text}`)
+    .join('\n\n')
+
+  console.log(
+    `[PDF API] ✅ COMPLETED: Processed ${images.length} pages from ${fileName}`,
+  )
+  console.log(
+    `[PDF API] Total extracted text length: ${combinedText.length} characters`,
+  )
+
+  // Return successful response
+  const response = ExtractTextResponseSchema.parse({
+    success: true,
+    extractedText: combinedText,
+    pageCount: images.length,
+    pages: extractedPages,
+    fileType: 'pdf',
+  })
+
+  return NextResponse.json(response)
+}
+
+// JSON processing (direct text extraction)
+async function processJSONExtraction(
+  requestData: z.infer<typeof JSONExtractRequestSchema>,
+): Promise<NextResponse> {
+  const { content, fileName } = requestData
+
+  console.log(`[JSON API] Processing JSON content for: ${fileName}`)
+  console.log(`[JSON API] Content length: ${content.length} characters`)
+
+  try {
+    // The content is already extracted text from client-side processing
+    // No need to parse JSON again - just use the pre-extracted text
+    const textContent = content
+
+    console.log(`[JSON API] Using pre-extracted text content`)
+    console.log(
+      `[JSON API] Text content length: ${textContent.length} characters`,
+    )
+
+    // For JSON, we treat the entire content as one "page" for consistency with PDF format
+    const extractedPages = [
+      {
+        pageNumber: 1,
+        text: textContent,
+      },
+    ]
+
+    console.log(`[JSON API] ✅ COMPLETED: Processed JSON from ${fileName}`)
+
+    // Return successful response
+    const response = ExtractTextResponseSchema.parse({
+      success: true,
+      extractedText: textContent,
+      pageCount: 1, // JSON is treated as single "page"
+      pages: extractedPages,
+      fileType: 'json',
+    })
+
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error('[JSON API] Error processing JSON:', error)
+    throw new Error(
+      `JSON processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
+  }
+}
+
+// Note: JSON processing is now done client-side
+// Server-side only handles pre-extracted text content
 
 async function extractTextFromImage(imageBase64: string): Promise<string> {
   try {

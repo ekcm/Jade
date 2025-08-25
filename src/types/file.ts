@@ -2,6 +2,16 @@
  * File-related type definitions that work in both client and server environments
  */
 
+// Supported file types
+export type FileType = 'pdf' | 'json' | 'unknown'
+
+// File type metadata
+export interface FileMetadata {
+  type: FileType
+  displayName: string
+  metadata: string // e.g., "~5 pages" for PDF, "JSON structure" for JSON
+}
+
 // Define File-like interface for server compatibility
 export interface FileData {
   name: string

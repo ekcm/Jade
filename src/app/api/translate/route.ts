@@ -116,7 +116,38 @@ async function translateText({
       zh: 'Traditional Chinese',
     }
 
-    const prompt = `You are a professional translator. Please translate the following text from ${languageNames[sourceLanguage as keyof typeof languageNames]} to ${languageNames[targetLanguage as keyof typeof languageNames]}. 
+    // Detect if the text is JSON format
+    const isJSON = text.trim().startsWith('{') && text.trim().endsWith('}')
+
+    const prompt = isJSON
+      ? `You are a professional translator. Please translate the following JSON from ${languageNames[sourceLanguage as keyof typeof languageNames]} to ${languageNames[targetLanguage as keyof typeof languageNames]}.
+
+IMPORTANT: You MUST translate both the property names (keys) AND their values.
+
+For example, if you see:
+{
+  "copyDetails": "Copy details",
+  "dateAndTime": "Date and time"
+}
+
+You should translate it to:
+{
+  "複製詳細資訊": "複製詳細資訊", 
+  "日期時間": "日期與時間"
+}
+
+Requirements:
+- TRANSLATE ALL property names (keys) - convert "copyDetails" to "複製詳細資訊", "dateAndTime" to "日期時間", etc.
+- TRANSLATE ALL string values as well
+- Maintain exact JSON structure and formatting (brackets, quotes, commas, indentation)
+- Keep variable placeholders like {{ASSET}}, {{CURRENCY}}, {{ID}} exactly as they are (do not translate these)
+- Use natural, fluent language in the target language for all translatable text
+- Do not add any explanations or comments
+- Return only valid JSON with both keys and values translated
+
+JSON to translate:
+${text}`
+      : `You are a professional translator. Please translate the following text from ${languageNames[sourceLanguage as keyof typeof languageNames]} to ${languageNames[targetLanguage as keyof typeof languageNames]}. 
 
 Requirements:
 - Maintain the original meaning and context

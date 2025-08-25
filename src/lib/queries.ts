@@ -1,12 +1,24 @@
 import { useMutation } from '@tanstack/react-query'
 import { z } from 'zod'
 
-// API Request/Response Types for text extraction
-const ExtractTextRequestSchema = z.object({
+// API Request/Response Types for text extraction (multi-format)
+const PDFExtractRequestSchema = z.object({
+  type: z.literal('pdf'),
   images: z.array(z.string()), // Array of base64 image data URLs from client-side processing
   fileName: z.string(),
   startPageNumber: z.number().optional().default(1),
 })
+
+const JSONExtractRequestSchema = z.object({
+  type: z.literal('json'),
+  content: z.string(), // JSON content as string
+  fileName: z.string(),
+})
+
+const ExtractTextRequestSchema = z.discriminatedUnion('type', [
+  PDFExtractRequestSchema,
+  JSONExtractRequestSchema,
+])
 
 const ExtractTextResponseSchema = z.object({
   success: z.boolean(),
@@ -18,6 +30,7 @@ const ExtractTextResponseSchema = z.object({
       text: z.string(),
     }),
   ),
+  fileType: z.enum(['pdf', 'json']),
   error: z.string().optional(),
 })
 
@@ -38,18 +51,26 @@ const TranslateResponseSchema = z.object({
   error: z.string().optional(),
 })
 
+export type PDFExtractRequest = z.infer<typeof PDFExtractRequestSchema>
+export type JSONExtractRequest = z.infer<typeof JSONExtractRequestSchema>
 export type ExtractTextRequest = z.infer<typeof ExtractTextRequestSchema>
 export type ExtractTextResponse = z.infer<typeof ExtractTextResponseSchema>
 export type TranslateRequest = z.infer<typeof TranslateRequestSchema>
 export type TranslateResponse = z.infer<typeof TranslateResponseSchema>
 
-// API Functions
-async function extractTextFromImages(
+// API Functions for multi-format extraction
+async function extractText(
   request: ExtractTextRequest,
 ): Promise<ExtractTextResponse> {
-  console.log(
-    `[API Call] Sending ${request.images.length} images for text extraction`,
-  )
+  if (request.type === 'pdf') {
+    console.log(
+      `[API Call] Sending ${request.images.length} PDF images for text extraction`,
+    )
+  } else if (request.type === 'json') {
+    console.log(
+      `[API Call] Sending JSON content for text extraction (${request.content.length} chars)`,
+    )
+  }
 
   const response = await fetch('/api/extract-text', {
     method: 'POST',
@@ -96,9 +117,9 @@ async function translateText(
 // Query Hooks
 export function useExtractText() {
   return useMutation({
-    mutationFn: extractTextFromImages,
+    mutationFn: extractText,
     onSuccess: (data) => {
-      console.log('[Extract Text] Success:', data)
+      console.log(`[Extract Text] Success (${data.fileType}):`, data)
     },
     onError: (error) => {
       console.error('[Extract Text] Error:', error)

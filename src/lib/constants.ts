@@ -7,7 +7,7 @@ export const FILE_UPLOAD_CONFIG = {
   MAX_FILE_SIZE: 10 * 1024 * 1024,
 
   /** Accepted file MIME types */
-  ACCEPTED_TYPES: ['application/pdf'] as const,
+  ACCEPTED_TYPES: ['application/pdf', 'application/json', 'text/json'] as const,
 
   /** Average estimated bytes per PDF page for page count estimation */
   PAGE_SIZE_ESTIMATE: 100 * 1024, // 100KB per page
@@ -53,18 +53,19 @@ export const UI_CONFIG = {
 } as const
 
 export const VALIDATION_MESSAGES = {
-  FILE_TYPE_ERROR: 'File must be a PDF',
+  FILE_TYPE_ERROR: 'File must be a PDF or JSON file',
   FILE_SIZE_ERROR: 'File size must be less than 10MB',
   FILE_EMPTY_ERROR: 'File cannot be empty',
   UPLOAD_FAILED_ERROR: 'Upload failed. Please try again.',
   INVALID_FILE_ERROR: 'Invalid file',
+  INVALID_JSON_ERROR: 'Invalid JSON format',
 } as const
 
 export const UI_TEXT = {
   UPLOAD: {
-    DRAG_DROP_PROMPT: 'Upload PDF file',
-    DRAG_DROP_ACTIVE: 'Drop your PDF here',
-    BROWSE_INSTRUCTION: 'Drag & drop or click to browse (Max 10MB)',
+    DRAG_DROP_PROMPT: 'Upload PDF or JSON file',
+    DRAG_DROP_ACTIVE: 'Drop your file here',
+    BROWSE_INSTRUCTION: 'Drag & drop or click to browse (PDF/JSON, Max 10MB)',
     CHOOSE_FILE_BUTTON: 'Choose File',
     SUCCESS_MESSAGE: '✓ File uploaded successfully and ready for processing',
     CLEAR_FILE_ARIA: 'Clear file',
@@ -78,6 +79,8 @@ export const UI_TEXT = {
 
   PANELS: {
     PDF_VIEWER_TITLE: 'PDF Viewer',
+    JSON_VIEWER_TITLE: 'JSON Viewer',
+    DOCUMENT_VIEWER_TITLE: 'Document Viewer',
     TRANSLATION_TITLE: 'Translation',
   },
 } as const
