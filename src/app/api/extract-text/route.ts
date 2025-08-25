@@ -91,7 +91,7 @@ async function processPDFExtraction(
 
   console.log(`[PDF API] Processing ${images.length} page images`)
 
-  // Extract text from each page image using Qwen 2-VL-72B
+  // Extract text from each page image using Qwen2.5-VL-72B
   const extractedPages = []
 
   for (let i = 0; i < images.length; i++) {
@@ -192,67 +192,109 @@ async function processJSONExtraction(
 // Server-side only handles pre-extracted text content
 
 async function extractTextFromImage(imageBase64: string): Promise<string> {
-  try {
-    console.log('[Vision Model] Calling Qwen 2-VL-72B for text extraction...')
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 2000 // 2 seconds
 
-    // Validate API key
-    const TOGETHER_AI_API_KEY = process.env.TOGETHER_AI_API_KEY
-    if (!TOGETHER_AI_API_KEY) {
-      throw new Error('TOGETHER_AI_API_KEY environment variable is not set')
-    }
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(
+        `[Vision Model] Calling Qwen2.5-VL-72B for text extraction... (attempt ${attempt}/${MAX_RETRIES})`,
+      )
 
-    // Use direct HTTP fetch to avoid library dependency issues
-    const response = await fetch(
-      'https://api.together.xyz/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${TOGETHER_AI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'Qwen/Qwen2-VL-72B-Instruct',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Please extract all text from this image. Return only the extracted text content, preserving the original formatting and structure as much as possible. Do not add any explanations or comments.',
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: imageBase64,
+      // Validate API key
+      const TOGETHER_AI_API_KEY = process.env.TOGETHER_AI_API_KEY
+      if (!TOGETHER_AI_API_KEY) {
+        throw new Error('TOGETHER_AI_API_KEY environment variable is not set')
+      }
+
+      // Use direct HTTP fetch to avoid library dependency issues
+      const response = await fetch(
+        'https://api.together.xyz/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${TOGETHER_AI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'Please extract all text from this image. Return only the extracted text content, preserving the original formatting and structure as much as possible. Do not add any explanations or comments.',
                   },
-                },
-              ],
-            },
-          ],
-          max_tokens: 4000,
-          temperature: 0.1, // Low temperature for consistent text extraction
-          top_p: 0.9,
-        }),
-      },
-    )
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: imageBase64,
+                    },
+                  },
+                ],
+              },
+            ],
+            max_tokens: 4000,
+            temperature: 0.1, // Low temperature for consistent text extraction
+            top_p: 0.9,
+          }),
+        },
+      )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`TogetherAI API error: ${response.status} - ${errorText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        const errorMessage = `TogetherAI API error: ${response.status} - ${errorText}`
+
+        // Retry on 503 (Service Unavailable) or 502 (Bad Gateway) errors
+        if (
+          (response.status === 503 || response.status === 502) &&
+          attempt < MAX_RETRIES
+        ) {
+          console.log(
+            `[Vision Model] Service temporarily unavailable, retrying in ${RETRY_DELAY}ms...`,
+          )
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
+          continue
+        }
+
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      const extractedText = data.choices?.[0]?.message?.content || ''
+
+      console.log(
+        `[Vision Model] Successfully extracted ${extractedText.length} characters on attempt ${attempt}`,
+      )
+
+      return extractedText.trim()
+    } catch (error) {
+      const isLastAttempt = attempt === MAX_RETRIES
+      const isRetryableError =
+        error instanceof Error &&
+        (error.message.includes('503') ||
+          error.message.includes('502') ||
+          error.message.includes('Service unavailable'))
+
+      if (!isLastAttempt && isRetryableError) {
+        console.log(
+          `[Vision Model] Attempt ${attempt} failed, retrying in ${RETRY_DELAY}ms...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
+        continue
+      }
+
+      console.error(
+        `[Vision Model] Error calling Qwen2.5-VL-72B (attempt ${attempt}):`,
+        error,
+      )
+      throw new Error(
+        `Vision model extraction failed after ${attempt} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
-
-    const data = await response.json()
-    const extractedText = data.choices?.[0]?.message?.content || ''
-
-    console.log(
-      `[Vision Model] Successfully extracted ${extractedText.length} characters`,
-    )
-
-    return extractedText.trim()
-  } catch (error) {
-    console.error('[Vision Model] Error calling Qwen 2-VL-72B:', error)
-    throw new Error(
-      `Vision model extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    )
   }
+
+  // This should never be reached, but TypeScript needs it
+  throw new Error('Unexpected error in vision model extraction')
 }

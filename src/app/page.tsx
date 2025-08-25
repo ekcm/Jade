@@ -154,8 +154,6 @@ export default function Home() {
 
         // Map UI model names to API model names
         const modelMapping = {
-          'qwen2.5-72b': 'qwen2.5-72b',
-          'kimi-k2': 'kimi-k2',
           'deepseek-v3': 'deepseek-v3',
         } as const
 

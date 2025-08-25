@@ -1,13 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-// Translation API endpoint that supports 3 translation models
+// Translation API endpoint using DeepSeek-V3 translation model
 // Handles Stage 2 of the pipeline: text translation after extraction
 
 // Supported translation models (serverless-compatible)
 const TRANSLATION_MODELS = {
-  'qwen2.5-72b': 'Qwen/Qwen2.5-72B-Instruct',
-  'kimi-k2': 'moonshotai/Kimi-K2-Instruct',
   'deepseek-v3': 'deepseek-ai/DeepSeek-V3',
 } as const
 
@@ -18,7 +16,7 @@ const TranslateRequestSchema = z.object({
   text: z.string().min(1, 'Text is required'),
   sourceLanguage: z.enum(['en', 'zh']),
   targetLanguage: z.enum(['en', 'zh']),
-  model: z.enum(['qwen2.5-72b', 'kimi-k2', 'deepseek-v3']),
+  model: z.enum(['deepseek-v3']),
 })
 
 // Response schema

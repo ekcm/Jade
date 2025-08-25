@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-export type TranslationModel = 'qwen2.5-72b' | 'kimi-k2' | 'deepseek-v3'
+export type TranslationModel = 'deepseek-v3'
 
 interface ModelSelectProps {
   selectedModel: TranslationModel
@@ -17,14 +17,6 @@ interface ModelSelectProps {
 }
 
 const modelOptions = [
-  {
-    value: 'qwen2.5-72b' as const,
-    label: 'Qwen2.5 72B',
-  },
-  {
-    value: 'kimi-k2' as const,
-    label: 'Kimi-K2-Instruct',
-  },
   {
     value: 'deepseek-v3' as const,
     label: 'DeepSeek-V3',

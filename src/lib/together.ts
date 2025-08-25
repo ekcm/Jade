@@ -38,7 +38,7 @@ export const MODEL_CONFIG = {
     temperature: 0.1,
     topP: 0.9,
     supportedFormats: ['pdf', 'image'],
-    description: 'Qwen 2-VL-72B - Best for document translation',
+    description: 'Qwen2.5-VL-72B - Best for document translation',
   },
 } as const
 

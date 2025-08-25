@@ -86,7 +86,7 @@ const initialDocumentState: DocumentState = {
 
 const initialTranslationState: TranslationState = {
   languageDirection: 'en-to-zh',
-  selectedModel: 'qwen2.5-72b',
+  selectedModel: 'deepseek-v3',
   originalText: '',
   translatedText: '',
   isTranslating: false,
